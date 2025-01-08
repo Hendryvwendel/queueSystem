@@ -3,7 +3,6 @@ import time
 import tkinter as tk
 from tkinter import ttk
 import threading
-from functions import *
 
 board = pyfirmata.Arduino("COM3")
 board.samplingOn(1000)
