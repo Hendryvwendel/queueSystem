@@ -1,12 +1,15 @@
 import pyfirmata2 as pyfirmata
 import time
+import json
 import tkinter as tk
 from tkinter import ttk
 import threading
-from functions import *
 
 board = pyfirmata.Arduino("COM3")
 board.samplingOn(1000)
+
+with open('values.json', 'r') as file:
+    vars = json.load(file)
 
 people_in_que = 0
 state = 'leeg'
@@ -15,15 +18,17 @@ is_green_blinking = False
 is_red_blinking = False
 is_yellow_blinking = False
 
-overload_mark = 80
-full_mark = 70
-high_mark = 40
-low_mark = 20
-empty_mark = 8
+empty_mark = vars['values'][0]['empty_mark']
+low_mark = vars['values'][0]['low_mark']
+high_mark = vars['values'][0]['high_mark']
+full_mark = vars['values'][0]['full_mark']
+overload_mark = vars['values'][0]['overload_mark']
 
 red_led = board.get_pin('d:8:o')
 yellow_led = board.get_pin('d:9:o')
 green_led = board.get_pin('d:10:o')
+
+
 
 def blink_red_led():
     while is_red_blinking:
@@ -46,7 +51,6 @@ def blink_green_led():
         green_led.write(0)
         time.sleep(0.5)
 
-
 def print_tick(to_print, interval):
     print(f'Status wachtrij: {to_print}')
     time.sleep(interval)
@@ -65,6 +69,8 @@ def check_amount_people(people):
         status = 'vol'
     elif people_in_que >= overload_mark:
         status = 'overload'
+    elif people_in_que == 0:
+        status = 'leeg'
     if status:
         return status
     else:
@@ -83,7 +89,7 @@ def led_on(led, blinking):
     if led == 'green' and blinking:
         if not is_green_blinking:
             is_green_blinking = True
-            threading.Thread(target=blink_green_led(is_green_blinking, green_led), daemon=True).start()
+            threading.Thread(target=blink_green_led, daemon=True).start()
     elif led == 'yellow' and not blinking:
         green_led.write(0)
         yellow_led.write(1)
@@ -94,7 +100,7 @@ def led_on(led, blinking):
     elif led == 'yellow' and blinking:
         if not is_yellow_blinking:
             is_yellow_blinking = True
-            threading.Thread(target=blink_yellow_led(is_yellow_blinking, yellow_led), daemon=True).start()
+            threading.Thread(target=blink_yellow_led, daemon=True).start()
     elif led == 'red' and not blinking:
         green_led.write(0)
         yellow_led.write(0)
@@ -105,7 +111,7 @@ def led_on(led, blinking):
     elif led == 'red' and blinking:
         if not is_red_blinking:
             is_red_blinking = True
-            threading.Thread(target=blink_red_led(is_red_blinking, red_led), daemon=True).start()
+            threading.Thread(target=blink_red_led, daemon=True).start()
         is_green_blinking = False
         is_yellow_blinking = False
         is_yellow_blinking = False
@@ -114,15 +120,18 @@ def que_join(value):
     global people_in_que
     if value:
         people_in_que += 1
+        if people_in_que > overload_mark:
+            people_in_que = overload_mark
+            print("Exit Sensor levert foutieve waardes: Wachtrij te vol")
         print(f"in de wachtrij: {people_in_que}")
 
-def que_leave(waarde):
+def que_leave(value):
     global people_in_que
-    if waarde:
+    if value:
         people_in_que -= 1
         if people_in_que < 0:
             people_in_que = 0
-            print("Exit Sensor levert foutieve waardes: Negatief bezoekersaantal")
+            print("Entrance Sensor levert foutieve waardes: Negatief bezoekersaantal")
         print(f"in de wachtrij: {people_in_que}")
 
 class StatusApp:
@@ -132,11 +141,11 @@ class StatusApp:
         self.root.geometry("800x600")
 
         self.mark_vars = {
-            "Overload Mark": {"value": overload_mark, "entry": None},
-            "Full Mark": {"value": full_mark, "entry": None},
-            "High Mark": {"value": high_mark, "entry": None},
-            "Low Mark": {"value": low_mark, "entry": None},
             "Empty Mark": {"value": empty_mark, "entry": None},
+            "Low Mark": {"value": low_mark, "entry": None},
+            "High Mark": {"value": high_mark, "entry": None},
+            "Full Mark": {"value": full_mark, "entry": None},
+            "Overload Mark": {"value": overload_mark, "entry": None},
         }
 
         self.stateVar = tk.StringVar(value=f"{state}")
@@ -183,6 +192,15 @@ class StatusApp:
             low_mark = int(self.mark_vars["Low Mark"]["entry"].get())
             empty_mark = int(self.mark_vars["Empty Mark"]["entry"].get())
 
+            vars['values'][0]['overload_mark'] = overload_mark
+            vars['values'][0]['full_mark'] = full_mark
+            vars['values'][0]['high_mark'] = high_mark
+            vars['values'][0]['low_mark'] = low_mark
+            vars['values'][0]['empty_mark'] = empty_mark
+
+            with open('values.json', 'w') as file:
+                json.dump(vars, file, indent=4)
+
             self.update_ui()
             print(f"Nieuwe waarden: overload_mark={overload_mark}, full_mark={full_mark}, high_mark={high_mark}, low_mark={low_mark}, empty_mark={empty_mark}")
         except ValueError:
@@ -208,15 +226,15 @@ class StatusApp:
         self.queueVar.set(people_in_que)
 
         if state == "leeg":
-            threading.Thread(target=StatusApp.update_circle(self, "green", True), daemon=True).start()
+            StatusApp.update_circle(self, "green", True)
         elif state == "zo goed als leeg":
-            threading.Thread(target=StatusApp.update_circle(self, "green", False), daemon=True).start()
+            StatusApp.update_circle(self, "green", False)
         elif state == "gevuld":
-            threading.Thread(target=StatusApp.update_circle(self, "yellow", False), daemon=True).start()
+            StatusApp.update_circle(self, "yellow", False)
         elif state == "bijna vol":
-            threading.Thread(target=StatusApp.update_circle(self, "red", False), daemon=True).start()
+            StatusApp.update_circle(self, "red", False)
         elif state == "vol":
-            threading.Thread(target=StatusApp.update_circle(self, "red", True), daemon=True).start()
+            StatusApp.update_circle(self, "red", True)
 
         self.root.after(100, self.update_ui)
 
@@ -246,6 +264,8 @@ def main_loop():
                 led_on('red', False)
             case 'vol':
                 led_on('red', True)
+        
+        time.sleep(0.1)
 
 if __name__ == '__main__':
     setup()
@@ -257,4 +277,3 @@ if __name__ == '__main__':
 
 
     board.exit()
-
