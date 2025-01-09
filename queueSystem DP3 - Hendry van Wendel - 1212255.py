@@ -18,19 +18,15 @@ is_green_blinking = False
 is_red_blinking = False
 is_yellow_blinking = False
 
-empty_mark = vars['values']['watermarks']['empty_mark']
-low_mark = vars['values']['watermarks']['low_mark']
-high_mark = vars['values']['watermarks']['high_mark']
-full_mark = vars['values']['watermarks']['full_mark']
-overload_mark = vars['values']['watermarks']['overload_mark']
+empty_mark = vars['values'][0]['empty_mark']
+low_mark = vars['values'][0]['low_mark']
+high_mark = vars['values'][0]['high_mark']
+full_mark = vars['values'][0]['full_mark']
+overload_mark = vars['values'][0]['overload_mark']
 
-red_pin = vars['values']['pinout']['red_led']
-yellow_pin = vars['values']['pinout']['yellow_led']
-green_pin = vars['values']['pinout']['green_led']
-
-red_led = board.get_pin(f'd:{red_pin}:o')
-yellow_led = board.get_pin(f'd:{yellow_pin}:o')
-green_led = board.get_pin(f'd:{green_pin}:o')
+red_led = board.get_pin('d:8:o')
+yellow_led = board.get_pin('d:9:o')
+green_led = board.get_pin('d:10:o')
 
 
 
@@ -196,11 +192,11 @@ class StatusApp:
             low_mark = int(self.mark_vars["Low Mark"]["entry"].get())
             empty_mark = int(self.mark_vars["Empty Mark"]["entry"].get())
 
-            vars['values']['watermarks']['overload_mark'] = overload_mark
-            vars['values']['watermarks']['full_mark'] = full_mark
-            vars['values']['watermarks']['high_mark'] = high_mark
-            vars['values']['watermarks']['low_mark'] = low_mark
-            vars['values']['watermarks']['empty_mark'] = empty_mark
+            vars['values'][0]['overload_mark'] = overload_mark
+            vars['values'][0]['full_mark'] = full_mark
+            vars['values'][0]['high_mark'] = high_mark
+            vars['values'][0]['low_mark'] = low_mark
+            vars['values'][0]['empty_mark'] = empty_mark
 
             with open('values.json', 'w') as file:
                 json.dump(vars, file, indent=4)
@@ -243,17 +239,12 @@ class StatusApp:
         self.root.after(100, self.update_ui)
 
 def setup():
-    input6 = vars['values']['inputs']['entrance_sensor']
-    input7 = vars['values']['inputs']['exit_sensor']
-
-    detection_pin6 = board.get_pin(f'd:{input6}:i')
-    print(f"Entrance sensor pin: {detection_pin6}")
-    detection_pin6.register_callback(que_join)
+    detection_pin6 = board.get_pin('d:2:i')
+    detection_pin6.register_callback(que_leave)
     detection_pin6.enable_reporting()
 
-    detection_pin7 = board.get_pin(f'd:{input7}:i')
-    print(f"Exit sensor pin: {detection_pin7}")
-    detection_pin7.register_callback(que_leave)
+    detection_pin7 = board.get_pin('d:3:i')
+    detection_pin7.register_callback(que_join)
     detection_pin7.enable_reporting()
 
 def main_loop():
