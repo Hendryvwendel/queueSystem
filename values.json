@@ -1,16 +1,24 @@
 {
-    "values": [
-        {
+    "values": {
+        "watermarks": {
             "empty_mark": 5,
             "low_mark": 10,
             "high_mark": 20,
             "full_mark": 25,
             "overload_mark": 30
         },
-        {
-            "red_led": "board.get_pin('d:8:o')",
-            "yellow_led": "board.get_pin('d:9:o')",
-            "green_led": "board.get_pin('d:10:o')"
+        "inputs": {
+            "entrance_sensor": 2,
+            "exit_sensor": 3
+        },
+        "pinout": {
+            "red_led": 8, 
+            "yellow_led": 9,
+            "green_led": 10
         }
-    ]
+    }
 }
+
+
+
+
