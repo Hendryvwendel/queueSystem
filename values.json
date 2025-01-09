@@ -1,5 +1,8 @@
 {
     "values": {
+        "arduino": {
+            "port": "COM3"
+        },
         "watermarks": {
             "empty_mark": 5,
             "low_mark": 10,
