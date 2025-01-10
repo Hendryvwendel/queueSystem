@@ -5,11 +5,15 @@ import tkinter as tk
 from tkinter import ttk
 import threading
 
-board = pyfirmata.Arduino("COM3")
-board.samplingOn(1000)
+
 
 with open('values.json', 'r') as file:
     vars = json.load(file)
+
+arduino = vars['values']['arduino']['port']
+
+board = pyfirmata.Arduino(f"{arduino}")
+board.samplingOn(1000)
 
 people_in_que = 0
 state = 'leeg'
